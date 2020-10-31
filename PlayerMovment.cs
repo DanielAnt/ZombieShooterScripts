@@ -10,13 +10,15 @@ public class PlayerMovment : MonoBehaviour
     public Camera mainCamera;
     public Bullet bullet;
     public GameObject ak;
+    private CharacterController controller;
     private Animator playerAnimator;
     private Rigidbody playerRB;
     private Vector2 mousePos;
     private RaycastHit hit;
     private Ray ray;
+    private float isShooting = 0;
     private float maxMovmentSpeed = 0.1f;
-    private float maxSidesMovementSpeed = 0.05f;
+    private float maxSidesMovementSpeed = 0.1f;
     private float velocityX;
     private float velocityZ;
     readonly float acceleration = 1f;
@@ -28,7 +30,7 @@ public class PlayerMovment : MonoBehaviour
     void Start()
     {
         playerAnimator = playerObject.GetComponent<Animator>();
-        playerRB = playerObject.GetComponent<Rigidbody>();
+        controller = playerObject.GetComponent<CharacterController>();
     }
 
     
@@ -36,16 +38,24 @@ public class PlayerMovment : MonoBehaviour
     {
         Movment();
 
-        if (Mouse.current.leftButton.isPressed && Time.time > nextShoot)
+        if (Mouse.current.leftButton.isPressed)
         {
-            nextShoot = Time.time + shootCooldown;
-            Bullet newBullet = Instantiate(bullet, ak.transform.position, Quaternion.identity) as Bullet;
-            Rigidbody newBulletRB = newBullet.GetComponent<Rigidbody>();
-            newBulletRB.AddForce(playerObject.transform.forward * 1500);
-            Destroy(newBullet.gameObject, 0.5f);
+            isShooting = 1;
+            if (Time.time > nextShoot)
+            {
+                nextShoot = Time.time + shootCooldown;
+                Bullet newBullet = Instantiate(bullet, ak.transform.position, Quaternion.identity) as Bullet;
+                Rigidbody newBulletRB = newBullet.GetComponent<Rigidbody>();
+                newBulletRB.AddForce(playerObject.transform.forward * 1500);
+                Destroy(newBullet.gameObject, 0.75f);
+            }
         }
+        else
+        {
+            isShooting -= 0.05f;
+        }
+        playerAnimator.SetFloat("isShooting", isShooting);
 
-        
     }
 
     private void Movment()
@@ -97,9 +107,10 @@ public class PlayerMovment : MonoBehaviour
         }
 
         Vector3 playerMovment = playerObject.transform.right.normalized * velocityX + playerObject.transform.forward.normalized * velocityZ;
-        playerObject.transform.position += Vector3.ClampMagnitude(playerMovment, maxMovmentSpeed);
+        controller.Move(Vector3.ClampMagnitude(playerMovment, maxMovmentSpeed));
         playerAnimator.SetFloat("Velocity X", velocityX);
         playerAnimator.SetFloat("Velocity Z", velocityZ);
+        
     }
 
     void LateUpdate()

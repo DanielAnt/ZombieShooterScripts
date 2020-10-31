@@ -16,7 +16,7 @@ public class CameraScript : MonoBehaviour
     {
         offset = new Vector3(0, 20, -8);
         mainCamera.transform.position = player.transform.position + offset;
-        //mainCamera.transform.LookAt(player.transform.position);
+        mainCamera.transform.rotation = Quaternion.Euler(67, 0, 0);
     }
 
     // Update is called once per frame
@@ -24,6 +24,6 @@ public class CameraScript : MonoBehaviour
     {
         offset -= (offset * Mouse.current.scroll.y.ReadValue() / 1500);
         mainCamera.transform.position = player.transform.position + offset;
-        //mainCamera.transform.LookAt(player.transform.position);
+        
     }
 }

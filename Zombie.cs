@@ -1,22 +1,26 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Zombie : MonoBehaviour
 {
     public GameObject playerObject;
     
-    private Collider boxCollider;
     private Animator animator;
+    private CharacterController controller;
     private float hitPoints = 3;
     private float maxSpeed = 0.11f;
     private float velocity = 0;
-    private float acceleration = 0.05f;
+    private float acceleration = 0.045f;
+    private float minDist = 1.2f;
+    private float isAttacking = 0;
     private int spottingDistance = 15;
     private int loseAggroDistance = 25;
     private bool spotted;
     private bool alive;
-    private int minDist = 1;
+
+    
     
     
 
@@ -25,7 +29,7 @@ public class Zombie : MonoBehaviour
         spotted = false;
         alive = true;
         animator = this.GetComponent<Animator>();
-        boxCollider = GetComponent<Collider>();
+        controller = GetComponent<CharacterController>();
     }
 
     void OnCollisionEnter(Collision collision)
@@ -37,7 +41,7 @@ public class Zombie : MonoBehaviour
             {
                 alive = false;
                 animator.SetBool("isDead", true);
-                boxCollider.enabled = false;
+                controller.enabled = false;
             }
         }
     }
@@ -45,6 +49,7 @@ public class Zombie : MonoBehaviour
 
     void FixedUpdate()
     {
+        isAttacking -= 0.01f;
         animator.SetBool("isAttacking", false);
         if (alive)
         {
@@ -61,8 +66,9 @@ public class Zombie : MonoBehaviour
             }
             else if(Vector3.Distance(transform.position, playerObject.transform.position) < minDist && velocity >= 0)
             {
-                animator.SetBool("isAttacking", true);
-                velocity -= 0.1f;
+                //animator.SetBool("isAttacking", true);
+                isAttacking = 1f;
+                velocity -= 0.04f;
                 if (velocity < 0) {
                     velocity = 0;
                 }
@@ -79,23 +85,31 @@ public class Zombie : MonoBehaviour
             {
                 velocity = maxSpeed;
             }
-            Debug.Log(velocity);
+            
+            if(isAttacking < 0)
+            {
+                isAttacking = 0;
+            }
 
-
-            animator.SetFloat("Velocity", velocity);
-            transform.position += transform.forward * velocity;
+            controller.Move(transform.forward.normalized * velocity);
+            Debug.Log(velocity + " " + isAttacking);
+            animator.SetFloat("Velocity", velocity * 10);
+            animator.SetFloat("isAttackingFloat", isAttacking);
+            //transform.position += transform.forward * velocity;
         }
         else
         {
             if(velocity > 0)
             {
                 velocity -= Time.deltaTime * acceleration * 10;
+                isAttacking = 0;
                 if(velocity < 0)
                 {
                     velocity = 0;
                 }
             }
         }
+       
     }
 
     void LateUpdate()
