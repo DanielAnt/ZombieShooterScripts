@@ -6,6 +6,7 @@ using UnityEngine.AI;
 public class Zombie : MonoBehaviour
 {
     public GameObject playerObject;
+    public GameObject bloodEffect;
     
     private Animator animator;
     private Collider zombieCollider;
@@ -38,6 +39,9 @@ public class Zombie : MonoBehaviour
         {
             movmentAgent.velocity = movmentAgent.velocity * 0.2f;
             hitPoints--;
+            GameObject particle = Instantiate(bloodEffect, new Vector3(this.transform.position.x, 1, this.transform.position.z), this.transform.rotation * Quaternion.Euler(0,135,0) );
+            
+            Destroy(particle.gameObject, 1);
             if (hitPoints <= 0)
             {
                 alive = false;

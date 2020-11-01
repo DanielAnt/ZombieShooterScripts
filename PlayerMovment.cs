@@ -130,7 +130,7 @@ public class PlayerMovment : MonoBehaviour
 
         //playerRB.MovePosition(transform.position + playerMovment * Time.fixedDeltaTime * 150);
 
-        Debug.Log(playerMovment.magnitude);
+        //Debug.Log(playerMovment.magnitude);
         controller.SimpleMove(playerMovment);
         playerAnimator.SetFloat("Velocity X", velocityX);
         playerAnimator.SetFloat("Velocity Z", velocityZ);
