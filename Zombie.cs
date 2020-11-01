@@ -8,12 +8,11 @@ public class Zombie : MonoBehaviour
     public GameObject playerObject;
     
     private Animator animator;
-    private CharacterController controller;
-    private float hitPoints = 3;
-    private float maxSpeed = 0.11f;
+    private Collider zombieCollider;
+    private NavMeshAgent movmentAgent;
+    private float hitPoints = 10;
     private float velocity = 0;
-    private float acceleration = 0.045f;
-    private float minDist = 1.2f;
+    private float minDist = 2f;
     private float isAttacking = 0;
     private int spottingDistance = 15;
     private int loseAggroDistance = 25;
@@ -29,26 +28,72 @@ public class Zombie : MonoBehaviour
         spotted = false;
         alive = true;
         animator = this.GetComponent<Animator>();
-        controller = GetComponent<CharacterController>();
+        movmentAgent = this.GetComponent<NavMeshAgent>();
+        zombieCollider = this.GetComponent<CapsuleCollider>();
     }
 
     void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Bullet"))
         {
+            movmentAgent.velocity = movmentAgent.velocity * 0.2f;
             hitPoints--;
             if (hitPoints <= 0)
             {
                 alive = false;
                 animator.SetBool("isDead", true);
-                controller.enabled = false;
+                zombieCollider.enabled = false;
+                movmentAgent.enabled = false;
+                isAttacking = 0;
+                velocity = 0;
+                velocity = Mathf.Clamp(velocity / 7, 0, 1);
+                isAttacking = Mathf.Clamp(isAttacking, 0, 1);
+                animator.SetFloat("isAttackingFloat", isAttacking);
+                animator.SetFloat("Velocity", velocity);
             }
         }
     }
 
 
-    void FixedUpdate()
+    void Update()
     {
+        if (alive)
+        {
+            if (Vector3.Distance(transform.position, playerObject.transform.position) <= spottingDistance)
+            {
+                spotted = true;
+            }
+            else if(Vector3.Distance(transform.position, playerObject.transform.position) >= loseAggroDistance)
+            {
+                spotted = false;
+            }
+
+            if (spotted)
+            {
+                this.transform.LookAt(playerObject.transform.position);
+                movmentAgent.SetDestination(playerObject.transform.position);
+                velocity = movmentAgent.velocity.magnitude;
+
+                if (Vector3.Distance(transform.position, playerObject.transform.position) <= minDist)
+                {
+                    isAttacking = 1f;
+
+                }
+                else
+                {
+                    isAttacking -= 0.01f;
+                }
+                velocity = Mathf.Clamp(velocity / 7, 0, 1);
+                isAttacking = Mathf.Clamp(isAttacking, 0, 1);
+                animator.SetFloat("isAttackingFloat", isAttacking);
+                animator.SetFloat("Velocity", velocity);
+                
+
+            }
+        }
+       
+
+        /*
         isAttacking -= 0.01f;
         animator.SetBool("isAttacking", false);
         if (alive)
@@ -109,16 +154,12 @@ public class Zombie : MonoBehaviour
                 }
             }
         }
+       */
        
+
+
     }
 
-    void LateUpdate()
-    {
-        if(Vector3.Distance(transform.position, playerObject.transform.position) > loseAggroDistance)
-        {
-            spotted = false;
-        }
-    }
 
 
 }

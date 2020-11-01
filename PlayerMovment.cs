@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,11 +18,11 @@ public class PlayerMovment : MonoBehaviour
     private RaycastHit hit;
     private Ray ray;
     private float isShooting = 0;
-    private float maxMovmentSpeed = 0.1f;
-    private float maxSidesMovementSpeed = 0.1f;
+    private float maxMovmentSpeed = 5f;
+    private float maxSidesMovementSpeed = 5f;
     private float velocityX;
     private float velocityZ;
-    readonly float acceleration = 1f;
+    readonly float acceleration = 14f;
     float nextShoot = 0;
     float shootCooldown = 0.2f;
 
@@ -29,17 +30,19 @@ public class PlayerMovment : MonoBehaviour
 
     void Start()
     {
-        playerAnimator = playerObject.GetComponent<Animator>();
-        controller = playerObject.GetComponent<CharacterController>();
+        playerAnimator = this.GetComponent<Animator>();
+        controller = this.GetComponent<CharacterController>();
+        //playerRB = this.GetComponent<Rigidbody>();
+        //playerRB.isKinematic = true;
     }
 
     
-    void FixedUpdate()
+    void Update()
     {
+              
         Movment();
-
         if (Mouse.current.leftButton.isPressed)
-        {
+        {           
             isShooting = 1;
             if (Time.time > nextShoot)
             {
@@ -67,52 +70,78 @@ public class PlayerMovment : MonoBehaviour
 
         if (forwardPressed && velocityZ < maxMovmentSpeed)
         {
-            velocityZ += Time.deltaTime * acceleration;
+            velocityZ += Time.fixedDeltaTime * acceleration;
         }
 
         if (backwardPressed && velocityZ > -maxMovmentSpeed)
         {
-            velocityZ -= Time.deltaTime * acceleration;
+            velocityZ -= Time.fixedDeltaTime * acceleration;
         }
 
         if (rightPressed && velocityX < maxSidesMovementSpeed)
         {
-            velocityX += Time.deltaTime * acceleration;
+            velocityX += Time.fixedDeltaTime * acceleration;
         }
 
         if (leftPressed && velocityX > -maxSidesMovementSpeed)
         {
-            velocityX -= Time.deltaTime * acceleration;
+            velocityX -= Time.fixedDeltaTime * acceleration;
         }
 
 
         if (!forwardPressed && velocityZ > 0)
         {
-            velocityZ -= Time.deltaTime * acceleration;
+            velocityZ -= Time.fixedDeltaTime * acceleration;
+            if(velocityZ < 0)
+            {
+                velocityZ = 0;
+            }
         }
 
         if (!backwardPressed && velocityZ < 0)
         {
-            velocityZ += Time.deltaTime * acceleration;
+            velocityZ += Time.fixedDeltaTime * acceleration;
+            if (velocityZ > 0)
+            {
+                velocityZ = 0;
+            }
         }
 
         if (!rightPressed && velocityX > 0)
         {
-            velocityX -= Time.deltaTime * acceleration;
+            velocityX -= Time.fixedDeltaTime * acceleration;
+            if (velocityX < 0)
+            {
+                velocityX = 0;
+            }
         }
 
         if (!leftPressed && velocityX < 0)
         {
-            velocityX += Time.deltaTime * acceleration;
+            velocityX += Time.fixedDeltaTime * acceleration;
+            if (velocityX > 0)
+            {
+                velocityX = 0;
+            }
         }
-
+               
         Vector3 playerMovment = playerObject.transform.right.normalized * velocityX + playerObject.transform.forward.normalized * velocityZ;
-        controller.Move(Vector3.ClampMagnitude(playerMovment, maxMovmentSpeed));
+        playerMovment = Vector3.ClampMagnitude(playerMovment, maxMovmentSpeed);
+
+        //playerRB.MovePosition(transform.position + playerMovment * Time.fixedDeltaTime * 150);
+
+        Debug.Log(playerMovment.magnitude);
+        controller.SimpleMove(playerMovment);
         playerAnimator.SetFloat("Velocity X", velocityX);
         playerAnimator.SetFloat("Velocity Z", velocityZ);
-        
-    }
 
+
+       
+
+
+    }
+    
+    
     void LateUpdate()
     {
         if (!Keyboard.current.spaceKey.isPressed)
@@ -125,8 +154,7 @@ public class PlayerMovment : MonoBehaviour
                 transform.LookAt(new Vector3(hit.point.x, transform.position.y, hit.point.z));
             }
         }
-        
     }
-
+    
 
 }

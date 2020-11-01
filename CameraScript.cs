@@ -6,24 +6,28 @@ using UnityEngine.InputSystem;
 public class CameraScript : MonoBehaviour
 {
 
-    public Camera mainCamera;
     public GameObject player;
 
     private Vector3 offset;
 
-    // Start is called before the first frame update
+    public float smoothTime = 1F;
+    private Transform playerPos;
+    private Vector3 velocity = Vector3.zero;
+     
+
+
     void Start()
     {
+        playerPos = player.transform;
         offset = new Vector3(0, 20, -8);
-        mainCamera.transform.position = player.transform.position + offset;
-        mainCamera.transform.rotation = Quaternion.Euler(67, 0, 0);
+        transform.position = player.transform.position + offset;
+        transform.rotation = Quaternion.Euler(67, 0, 0);
     }
-
-    // Update is called once per frame
-    void LateUpdate()
+    void Update()
     {
         offset -= (offset * Mouse.current.scroll.y.ReadValue() / 1500);
-        mainCamera.transform.position = player.transform.position + offset;
+        Vector3 targetPosition = player.transform.position + offset;
         
+        transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref velocity, smoothTime);
     }
 }
