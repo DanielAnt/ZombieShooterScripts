@@ -4,17 +4,39 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PlayerMovment : MonoBehaviour
+public class Player: MonoBehaviour
 {
 
-    public GameObject playerObject;
-    public Camera mainCamera;
+    #region Instance
+    private static Player _instance;
+    public static Player Instance => _instance;
+
+    private void Awake()
+    {
+        if (_instance != null)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            _instance = this;
+        }
+    }
+    #endregion
+
+
+    public CameraScript cameraPrefab;
     public Bullet bullet;
     public GameObject ak;
+    public Grenade grenade;
+    public int hitPoints = 5;
+    public Vector3 crosshairPosition;
+
+
+    private Camera playerCamera;
     private CharacterController controller;
     private Animator playerAnimator;
     private Rigidbody playerRB;
-    private Vector2 mousePos;
     private RaycastHit hit;
     private Ray ray;
     private float isShooting = 0;
@@ -24,7 +46,7 @@ public class PlayerMovment : MonoBehaviour
     private float velocityZ;
     readonly float acceleration = 14f;
     float nextShoot = 0;
-    float shootCooldown = 0.2f;
+    float shootCooldown = 0.05f;
 
 
 
@@ -32,25 +54,38 @@ public class PlayerMovment : MonoBehaviour
     {
         playerAnimator = this.GetComponent<Animator>();
         controller = this.GetComponent<CharacterController>();
+        CameraScript playerCameraScript = Instantiate(cameraPrefab, new Vector3(0, 0, 0), Quaternion.identity) as CameraScript;
+        playerCameraScript.SetObjectToLookAt(Instance);
+        playerCamera = playerCameraScript.GetComponent<Camera>();
+        CalculateCrosshairPosition();
         //playerRB = this.GetComponent<Rigidbody>();
         //playerRB.isKinematic = true;
+
     }
 
     
     void Update()
     {
-              
+        CalculateCrosshairPosition();
         Movment();
+        if (Keyboard.current.kKey.isPressed && Time.time > nextShoot)
+        {
+            nextShoot = Time.time + 5f;
+            Grenade newGrenade = Instantiate(grenade, new Vector3(transform.position.x, transform.position.y+1, transform.position.z) , Quaternion.identity) as Grenade;
+            newGrenade.CalculatePath(this.transform, crosshairPosition);
+        }
         if (Mouse.current.leftButton.isPressed)
         {           
             isShooting = 1;
             if (Time.time > nextShoot)
             {
+
+                Vector3 shootnigDirection = (crosshairPosition - ak.transform.position).normalized;
                 nextShoot = Time.time + shootCooldown;
-                Bullet newBullet = Instantiate(bullet, ak.transform.position, Quaternion.identity) as Bullet;
+                Bullet newBullet = Instantiate(bullet, new Vector3(ak.transform.position.x, ak.transform.position.y, ak.transform.position.z), transform.rotation * Quaternion.Euler(90,0,0)) as Bullet;
                 Rigidbody newBulletRB = newBullet.GetComponent<Rigidbody>();
-                newBulletRB.AddForce(playerObject.transform.forward * 1500);
-                Destroy(newBullet.gameObject, 0.75f);
+                newBulletRB.AddForce(shootnigDirection * 750);
+                Destroy(newBullet.gameObject, 2);
             }
         }
         else
@@ -59,6 +94,16 @@ public class PlayerMovment : MonoBehaviour
         }
         playerAnimator.SetFloat("isShooting", isShooting);
 
+    }
+
+    void CalculateCrosshairPosition()
+    {
+        Vector2 mousePos = Mouse.current.position.ReadValue();
+        ray = playerCamera.ScreenPointToRay(mousePos);
+        if (Physics.Raycast(ray, out hit, 100))
+        {
+            crosshairPosition = new Vector3(hit.point.x, hit.point.y+0.05f, hit.point.z);
+        }
     }
 
     private void Movment()
@@ -125,36 +170,45 @@ public class PlayerMovment : MonoBehaviour
             }
         }
                
-        Vector3 playerMovment = playerObject.transform.right.normalized * velocityX + playerObject.transform.forward.normalized * velocityZ;
+        Vector3 playerMovment = transform.right.normalized * velocityX + transform.forward.normalized * velocityZ;
         playerMovment = Vector3.ClampMagnitude(playerMovment, maxMovmentSpeed);
 
-        //playerRB.MovePosition(transform.position + playerMovment * Time.fixedDeltaTime * 150);
 
-        //Debug.Log(playerMovment.magnitude);
+        
         controller.SimpleMove(playerMovment);
         playerAnimator.SetFloat("Velocity X", velocityX);
         playerAnimator.SetFloat("Velocity Z", velocityZ);
-
-
-       
-
-
     }
-    
-    
+
+   
     void LateUpdate()
     {
+        
         if (!Keyboard.current.spaceKey.isPressed)
         {
+            /*
             Vector2 mousePos = Mouse.current.position.ReadValue();
-            ray = Camera.main.ScreenPointToRay(mousePos);
+            ray = playerCamera.ScreenPointToRay(mousePos);
 
             if (Physics.Raycast(ray, out hit, 100))
             {
                 transform.LookAt(new Vector3(hit.point.x, transform.position.y, hit.point.z));
             }
+            */
+            transform.LookAt(new Vector3(crosshairPosition.x, transform.position.y, crosshairPosition.z));
         }
+        
     }
     
+
+    public void getDamage(int aDamage)
+    {
+        hitPoints -= aDamage;
+        if(hitPoints <= 0)
+        {
+            playerAnimator.SetBool("isDead", true);
+        }
+    }
+
 
 }
