@@ -8,7 +8,9 @@ public class Zombie : MonoBehaviour
     public Player player;
 
     public GameObject bloodEffect;
+    public GameObject attackingHand;
 
+    
     private GameObject animatedBody;
     private GameObject ragdoll;
     private GameObject playerObject;
@@ -24,8 +26,10 @@ public class Zombie : MonoBehaviour
     private bool spotted;
     private bool alive;
 
+    float attackCooldown = 0f;
 
 
+    
 
 
     void Start()
@@ -37,6 +41,8 @@ public class Zombie : MonoBehaviour
         animator = this.GetComponentInChildren<Animator>();
         animatedBody = transform.Find("AnimatedBody").gameObject;
         ragdoll = transform.Find("Rigidbody").gameObject;
+        animatedBody.SetActive(true);
+        ragdoll.SetActive(false);
     }
 
     void OnCollisionEnter(Collision collision)
@@ -44,16 +50,22 @@ public class Zombie : MonoBehaviour
         if (collision.gameObject.CompareTag("Bullet"))
         {
             movmentAgent.velocity = movmentAgent.velocity * 0.5f;
-            hitPoints--;
             //ALLWAYS SPAWNS BLOOD BEHIND ZOMBIE
             //GameObject particle = Instantiate(bloodEffect, new Vector3(this.transform.position.x, 1, this.transform.position.z), this.transform.rotation * Quaternion.Euler(0,135,0) );
             //SPAWNS BLOOD ON OPPOSITE SIDE OF ZOMBIES BULLET COLLISION
             GameObject particle = Instantiate(bloodEffect, new Vector3(this.transform.position.x, 1, this.transform.position.z), collision.gameObject.transform.rotation * Quaternion.Euler(0,135,0) );
             Destroy(particle.gameObject, 1);
+            if (handleDamage(1))
+            {
+                Rigidbody zombieRb = ragdoll.GetComponentInChildren<Rigidbody>();
+                zombieRb.AddExplosionForce(3000, transform.position + transform.forward + new Vector3(0, 1.6f, 0), 50);
+            }
+
+            /*
             if (hitPoints <= 0)
             {
-                alive = false;
-                /*
+
+                ## animation death
                 int Random = UnityEngine.Random.Range(1, 3);
                 if(Random == 1)
                 {
@@ -63,14 +75,15 @@ public class Zombie : MonoBehaviour
                 {
                     animator.SetBool("isDead2", true);
                 }
-                */
+                ## animation death
+                
+                alive = false;
                 zombieCollider.enabled = false;
                 movmentAgent.enabled = false;
                 animatedBody.SetActive(false);
                 ragdoll.SetActive(true);
                 CopyTransformData(animatedBody.transform, ragdoll.transform, movmentAgent.velocity);
                 Rigidbody test = ragdoll.GetComponentInChildren<Rigidbody>();
-                //test.AddForce(player.transform.forward * 3000);
                 test.AddExplosionForce(3000, transform.position + transform.forward + new Vector3(0,1.6f,0) , 50);
                 //isAttacking = 0;
                 //velocity = 0;
@@ -78,15 +91,38 @@ public class Zombie : MonoBehaviour
                 //isAttacking = Mathf.Clamp(isAttacking, 0, 1);
                 //animator.SetFloat("isAttackingFloat", isAttacking);
                 //animator.SetFloat("Velocity", velocity);
-
-
             }
+            */
         }
     }
 
+    public void spawnBlood(Transform place)
+    {
+
+    }
+    public bool handleDamage(float damage)
+    {
+        hitPoints = hitPoints - damage;
+        if (hitPoints <= 0)
+        {
+            alive = false;
+            zombieCollider.enabled = false;
+            movmentAgent.enabled = false;
+            animatedBody.SetActive(false);
+            ragdoll.SetActive(true);
+            CopyTransformData(animatedBody.transform, ragdoll.transform, movmentAgent.velocity);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+
     private void CopyTransformData(Transform sourceTransform, Transform destinationTransform, Vector3 velocity)
     {
-        for (int i = 0; i < sourceTransform.childCount; i++)
+        for (int i = 0; i < destinationTransform.childCount; i++)
         {
             var source = sourceTransform.GetChild(i);
             var destination = destinationTransform.GetChild(i);
@@ -103,13 +139,14 @@ public class Zombie : MonoBehaviour
         }
     }
 
+    
     void Update()
     {
         if (!playerObject)
         {
             playerObject = GameObject.FindGameObjectWithTag("Player");
         }
-        if (alive)
+        if (alive && playerObject)
         {
             if (Vector3.Distance(transform.position, playerObject.transform.position) <= spottingDistance)
             {
@@ -135,11 +172,24 @@ public class Zombie : MonoBehaviour
                 {
                     isAttacking -= 0.01f;
                 }
-                velocity = Mathf.Clamp(velocity / 7, 0, 1);
+                velocity = Mathf.Clamp(velocity, 0, 1);
                 isAttacking = Mathf.Clamp(isAttacking, 0, 1);
-                animator.SetFloat("isAttackingFloat", isAttacking);
+                animator.SetLayerWeight(1, isAttacking);
                 animator.SetFloat("Velocity", velocity);
-                
+                if(isAttacking > 0 && Time.time > attackCooldown)
+                {
+                    Collider[] hitObjects = Physics.OverlapSphere(attackingHand.transform.position, 0.5f);
+                    foreach(Collider hitObject in hitObjects)
+                    {
+                        if (hitObject.CompareTag("Player"))
+                        {
+                            Player hittedPlayer = hitObject.GetComponent<Player>();
+                            hittedPlayer.GetDamage(2);
+                            attackCooldown = Time.time + 2.2f;
+                        }
+                    }
+
+                }
 
             }
         }

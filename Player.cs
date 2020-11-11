@@ -29,10 +29,10 @@ public class Player: MonoBehaviour
     public Bullet bullet;
     public GameObject ak;
     public Grenade grenade;
-    public int hitPoints = 5;
+    public float hitPoints = 100;
     public Vector3 crosshairPosition;
-
-
+    
+    private HealthBar healthBar;
     private Camera playerCamera;
     private CharacterController controller;
     private Animator playerAnimator;
@@ -44,20 +44,26 @@ public class Player: MonoBehaviour
     private float maxSidesMovementSpeed = 5f;
     private float velocityX;
     private float velocityZ;
+    private  bool alive;
     readonly float acceleration = 14f;
     float nextShoot = 0;
+    float nextGrenade = 0;
     float shootCooldown = 0.05f;
+    
 
 
 
     void Start()
     {
+        alive = true;
         playerAnimator = this.GetComponent<Animator>();
         controller = this.GetComponent<CharacterController>();
         CameraScript playerCameraScript = Instantiate(cameraPrefab, new Vector3(0, 0, 0), Quaternion.identity) as CameraScript;
         playerCameraScript.SetObjectToLookAt(Instance);
         playerCamera = playerCameraScript.GetComponent<Camera>();
         CalculateCrosshairPosition();
+        healthBar = GameObject.FindGameObjectWithTag("HealthBar").GetComponent<HealthBar>();
+
         //playerRB = this.GetComponent<Rigidbody>();
         //playerRB.isKinematic = true;
 
@@ -66,34 +72,55 @@ public class Player: MonoBehaviour
     
     void Update()
     {
+
+        healthBar.SetHealth(hitPoints);
+        
+        
         CalculateCrosshairPosition();
-        Movment();
-        if (Keyboard.current.kKey.isPressed && Time.time > nextShoot)
+        if (alive)
         {
-            nextShoot = Time.time + 5f;
-            Grenade newGrenade = Instantiate(grenade, new Vector3(transform.position.x, transform.position.y+1, transform.position.z) , Quaternion.identity) as Grenade;
-            newGrenade.CalculatePath(this.transform, crosshairPosition);
-        }
-        if (Mouse.current.leftButton.isPressed)
-        {           
-            isShooting = 1;
-            if (Time.time > nextShoot)
+
+            Movment();
+            if (Keyboard.current.gKey.isPressed && Time.time > nextGrenade)
             {
-
-                Vector3 shootnigDirection = (crosshairPosition - ak.transform.position).normalized;
-                nextShoot = Time.time + shootCooldown;
-                Bullet newBullet = Instantiate(bullet, new Vector3(ak.transform.position.x, ak.transform.position.y, ak.transform.position.z), transform.rotation * Quaternion.Euler(90,0,0)) as Bullet;
-                Rigidbody newBulletRB = newBullet.GetComponent<Rigidbody>();
-                newBulletRB.AddForce(shootnigDirection * 750);
-                Destroy(newBullet.gameObject, 2);
+                nextGrenade = Time.time + 1f;
+                Grenade newGrenade = Instantiate(grenade, new Vector3(transform.position.x, transform.position.y + 1f, transform.position.z), Quaternion.identity) as Grenade;
+                newGrenade.CalculatePath(this.transform, crosshairPosition);
             }
-        }
-        else
-        {
-            isShooting -= 0.05f;
-        }
-        playerAnimator.SetFloat("isShooting", isShooting);
+            if (Mouse.current.leftButton.isPressed)
+            {
+                isShooting = 1;
+                if (Time.time > nextShoot)
+                {
 
+                    Vector3 shootnigDirection = (crosshairPosition - ak.transform.position).normalized;
+                    nextShoot = Time.time + shootCooldown;
+                    Bullet newBullet = Instantiate(bullet, new Vector3(ak.transform.position.x, ak.transform.position.y, ak.transform.position.z), transform.rotation * Quaternion.Euler(90, 0, 0)) as Bullet;
+                    Rigidbody newBulletRB = newBullet.GetComponent<Rigidbody>();
+                    newBulletRB.AddForce(shootnigDirection * 750);
+                    Destroy(newBullet.gameObject, 2);
+                }
+            }
+            else
+            {
+                isShooting -= 0.05f;
+            }
+            playerAnimator.SetFloat("isShooting", isShooting);
+        }
+
+    }
+
+
+    public void GetDamage(int damage)
+    {
+        
+        hitPoints = hitPoints - damage;
+        if(hitPoints <= 0)
+        {
+            Debug.Log("U DIED");
+            playerAnimator.SetBool("isDead", true);
+            alive = false;
+        }
     }
 
     void CalculateCrosshairPosition()
@@ -184,7 +211,7 @@ public class Player: MonoBehaviour
     void LateUpdate()
     {
         
-        if (!Keyboard.current.spaceKey.isPressed)
+        if (!Keyboard.current.spaceKey.isPressed && alive)
         {
             /*
             Vector2 mousePos = Mouse.current.position.ReadValue();
@@ -201,14 +228,7 @@ public class Player: MonoBehaviour
     }
     
 
-    public void getDamage(int aDamage)
-    {
-        hitPoints -= aDamage;
-        if(hitPoints <= 0)
-        {
-            playerAnimator.SetBool("isDead", true);
-        }
-    }
+
 
 
 }
