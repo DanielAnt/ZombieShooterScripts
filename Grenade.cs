@@ -30,7 +30,7 @@ public class Grenade : MonoBehaviour
             if (hitObject.CompareTag("Zombie"))
             {
                 Zombie zombie = hitObject.GetComponent<Zombie>();
-                if (zombie.handleDamage(explosionDamage))
+                if (zombie.handleDamage(explosionDamage, hitObject.transform))
                 {
                     Rigidbody[] rigidbodies = zombie.GetComponentsInChildren<Rigidbody>();
                     foreach(Rigidbody zombieRb in rigidbodies)

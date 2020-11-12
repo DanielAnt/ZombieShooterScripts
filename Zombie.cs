@@ -6,7 +6,7 @@ using UnityEngine.AI;
 public class Zombie : MonoBehaviour
 {
     public Player player;
-
+    public float hitPoints = 15;
     public GameObject bloodEffect;
     public GameObject attackingHand;
 
@@ -25,7 +25,6 @@ public class Zombie : MonoBehaviour
     private int loseAggroDistance = 25;
     private bool spotted;
     private bool alive;
-
     float attackCooldown = 0f;
 
 
@@ -50,12 +49,15 @@ public class Zombie : MonoBehaviour
         if (collision.gameObject.CompareTag("Bullet"))
         {
             movmentAgent.velocity = movmentAgent.velocity * 0.5f;
+            Bullet hitBullet = collision.gameObject.GetComponent<Bullet>();
+
             //ALLWAYS SPAWNS BLOOD BEHIND ZOMBIE
             //GameObject particle = Instantiate(bloodEffect, new Vector3(this.transform.position.x, 1, this.transform.position.z), this.transform.rotation * Quaternion.Euler(0,135,0) );
             //SPAWNS BLOOD ON OPPOSITE SIDE OF ZOMBIES BULLET COLLISION
-            GameObject particle = Instantiate(bloodEffect, new Vector3(this.transform.position.x, 1, this.transform.position.z), collision.gameObject.transform.rotation * Quaternion.Euler(0,135,0) );
-            Destroy(particle.gameObject, 1);
-            if (handleDamage(1))
+            //GameObject particle = Instantiate(bloodEffect, new Vector3(this.transform.position.x, 1, this.transform.position.z), collision.gameObject.transform.rotation * Quaternion.Euler(0,135,0) );
+            //Destroy(particle.gameObject, 1);
+            Debug.Log(hitBullet.GetDamage());
+            if (handleDamage(hitBullet.GetDamage(), collision.transform))
             {
                 Rigidbody zombieRb = ragdoll.GetComponentInChildren<Rigidbody>();
                 zombieRb.AddExplosionForce(3000, transform.position + transform.forward + new Vector3(0, 1.6f, 0), 50);
@@ -100,9 +102,13 @@ public class Zombie : MonoBehaviour
     {
 
     }
-    public bool handleDamage(float damage)
+    public bool handleDamage(float damage, Transform damageObject)
     {
+        
         hitPoints = hitPoints - damage;
+        //GameObject particle = Instantiate(bloodEffect, damageObject.position, damageObject.rotation * Quaternion.Euler(0,135,0));
+        GameObject particle = Instantiate(bloodEffect, transform.position + new Vector3(0, 1f, 0), damageObject.rotation);
+        Destroy(particle.gameObject, 1);
         if (hitPoints <= 0)
         {
             alive = false;

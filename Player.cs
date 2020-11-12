@@ -26,12 +26,13 @@ public class Player: MonoBehaviour
 
 
     public CameraScript cameraPrefab;
-    public Bullet bullet;
-    public GameObject ak;
     public Grenade grenade;
     public float hitPoints = 100;
     public Vector3 crosshairPosition;
+    public List<Firearm> equipment;
+
     
+    private Firearm equipedWeapon;
     private HealthBar healthBar;
     private Camera playerCamera;
     private CharacterController controller;
@@ -46,9 +47,7 @@ public class Player: MonoBehaviour
     private float velocityZ;
     private  bool alive;
     readonly float acceleration = 14f;
-    float nextShoot = 0;
     float nextGrenade = 0;
-    float shootCooldown = 0.05f;
     
 
 
@@ -63,10 +62,7 @@ public class Player: MonoBehaviour
         playerCamera = playerCameraScript.GetComponent<Camera>();
         CalculateCrosshairPosition();
         healthBar = GameObject.FindGameObjectWithTag("HealthBar").GetComponent<HealthBar>();
-
-        //playerRB = this.GetComponent<Rigidbody>();
-        //playerRB.isKinematic = true;
-
+        equipedWeapon = equipment[0];
     }
 
     
@@ -90,16 +86,7 @@ public class Player: MonoBehaviour
             if (Mouse.current.leftButton.isPressed)
             {
                 isShooting = 1;
-                if (Time.time > nextShoot)
-                {
-
-                    Vector3 shootnigDirection = (crosshairPosition - ak.transform.position).normalized;
-                    nextShoot = Time.time + shootCooldown;
-                    Bullet newBullet = Instantiate(bullet, new Vector3(ak.transform.position.x, ak.transform.position.y, ak.transform.position.z), transform.rotation * Quaternion.Euler(90, 0, 0)) as Bullet;
-                    Rigidbody newBulletRB = newBullet.GetComponent<Rigidbody>();
-                    newBulletRB.AddForce(shootnigDirection * 750);
-                    Destroy(newBullet.gameObject, 2);
-                }
+                equipedWeapon.Fire(crosshairPosition);
             }
             else
             {
